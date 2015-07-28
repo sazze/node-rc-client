@@ -7,8 +7,7 @@
     "registry": "http://npm.sazze.com/"
   },
   "scripts": {
-    "test": "make test",
-    "postinstall": "node scripts/postinstall.js"
+    "test": "make test"
   },
   "repository": {
     "type": "git",
@@ -32,5 +31,11 @@
     "lodash": "^3.10.0",
     "node-getopt": "^0.2.3",
     "sz-rc-protocol": "=1.0.0"
+  },
+  "bundledDependencies": [
+    "engine.io-client"
+  ],
+  "bin": {
+    "rc": "bin/rc"
   }
 }
