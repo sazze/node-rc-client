@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * @author Craig Thayer <cthayer@sazze.com>
  * @copyright 2015 Sazze, Inc.
@@ -6,9 +7,10 @@
 var path = require('path');
 var execSync = require('child_process').execSync;
 
-var rootDir = process.cwd();
+var rootDir = path.join(__dirname, '..');
+var origCwd = process.cwd();
 
-process.chdir(path.join('node_modules', 'engine.io-client'));
+process.chdir(path.join(rootDir, 'node_modules', 'engine.io-client'));
 
 try {
   var stdout = execSync('patch -p1 < ' + path.join(rootDir, 'patches', 'engine.io-client', '1.5.2-master-2015-07-06.patch'));
@@ -23,4 +25,4 @@ stdout = execSync('npm install');
 
 console.log(stdout.toString());
 
-process.chdir(rootDir);
+process.chdir(origCwd);

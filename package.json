@@ -1,14 +1,13 @@
 {
   "name": "sz-rc-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "client library and binary for the remote-control server",
   "main": "index.js",
   "publishConfig": {
     "registry": "http://npm.sazze.com/"
   },
   "scripts": {
-    "test": "make test",
-    "postinstall": "node scripts/postinstall.js"
+    "test": "make test"
   },
   "repository": {
     "type": "git",
@@ -32,5 +31,11 @@
     "lodash": "^3.10.0",
     "node-getopt": "^0.2.3",
     "sz-rc-protocol": "=1.0.0"
+  },
+  "bundledDependencies": [
+    "engine.io-client"
+  ],
+  "bin": {
+    "rc": "bin/rc"
   }
 }
