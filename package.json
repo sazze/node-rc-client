@@ -1,6 +1,6 @@
 {
   "name": "sz-rc-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "client library and binary for the remote-control server",
   "main": "index.js",
   "publishConfig": {
