@@ -7,8 +7,7 @@
     "registry": "http://npm.sazze.com/"
   },
   "scripts": {
-    "test": "make test",
-    "postinstall": "node scripts/postinstall.js"
+    "test": "make test"
   },
   "repository": {
     "type": "git",
@@ -28,7 +27,7 @@
   "dependencies": {
     "cli-color": "^1.0.0",
     "debug": "^2.2.0",
-    "engine.io-client": "=1.5.2",
+    "engine.io-client": "git+https://github.com/socketio/engine.io-client#ea5b5f24cfd77fa39f92f93c65b5ec05f73ab30e",
     "lodash": "^3.10.0",
     "node-getopt": "^0.2.3",
     "sz-rc-protocol": "=1.0.0"
