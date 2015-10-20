@@ -11,6 +11,12 @@ npm install -g sz-rc-client
 rc --help
 ```
 
+To run the same command on multiple hosts, pipe the hosts to `rc`.
+
+```bash
+cat hosts.txt | rc "uname -a"
+```
+
 ### Application Integration
 ```
 npm install --save sz-rc-client

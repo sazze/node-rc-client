@@ -5,27 +5,36 @@ var Client = require('../');
 var fs = require('fs');
 var Getopt = require('node-getopt');
 var clc = require('cli-color');
+var Liner = require('sz-liner');
+var path = require('path');
 
 var getopt = new Getopt([
-  ['', 'keyDir=DIR', 'directory where key is found'],
-  ['', 'configFile=FILE', 'json file with config options'],
+  ['d', 'keyDir=DIR', 'directory where key is found'],
+  ['c', 'configFile=FILE', 'json file with config options'],
   ['p', 'port=PORT', 'the port to connect to'],
-  ['k', 'key=NAME', 'the name of the key to use'],
+  ['k', 'keyName=NAME', 'the name of the key to use'],
   ['v', 'verbose', 'display raw response information'],
   ['h', 'help', 'display this help message']
 ]);
 
 getopt.setHelp(
-  'Usage: rc [OPTIONS] HOST COMMAND' + "\n" +
-  'Send a COMMAND to a HOST running the remote-command service' + "\n" +
+  'Usage: rc [OPTIONS] [HOST] COMMAND' + "\n" +
+  'Send a COMMAND to a HOST running the remote-control service' + "\n" +
   "\n" +
   'HOST        the hostname or ip address of the host to run the command on' + "\n" +
+  '            (omit to read the host(s) from STDIN, 1 host per line)' + "\n" +
   'COMMAND     the command to run on the host' + "\n" +
   "\n" +
   '[[OPTIONS]]' + "\n" +
   "\n" +
   'Version: ' + require('../package.json').version + "\n" +
-  'Repository: ' + require('../package.json').repository.url.replace('/\.git$/', '') + "\n"
+  'Repository: ' + require('../package.json').repository.url.replace('/\.git$/', '') + "\n" +
+  "\n" +
+  'Examples:' + "\n" +
+  "\n" +
+  '    rc -c config.json host1.example.com "uname -a"' + "\n" +
+  "\n" +
+  '    cat hosts.txt | rc -c config.json "uname -a"' + "\n"
 );
 
 var opts = getopt.parseSystem();
@@ -38,47 +47,92 @@ if (opts.options.help) {
 var options = {};
 
 if (opts.options.configFile) {
-  _.merge(options, require(opts.options.configFile));
+  _.merge(options, require(path.resolve(process.cwd(), path.join(path.dirname(opts.options.configFile), path.basename(opts.options.configFile)))));
 }
 
 if (opts.options.keyDir) {
   options.keyDir = opts.options.keyDir;
 }
 
-if (opts.options.key) {
-  options.keyName = opts.options.key;
+if (opts.options.keyName) {
+  options.keyName = opts.options.keyName;
 }
 
 if (opts.options.port) {
   options.port = opts.options.port;
 }
 
-if (opts.argv.length != 2) {
+if (opts.argv.length > 2 || opts.argv.length < 1) {
   console.error('Invalid arguments');
   getopt.showHelp();
   process.exit(1);
 }
 
-options.host = opts.argv[0];
+if (opts.argv.length == 1) {
+  // read the host(s) from STDIN and execute the command on all of them
+  process.stdin.on('error', function (err) {
+    console.error(err.message || err);
+    process.exit(2);
+  });
 
-var client = new Client(options);
+  var liner = new Liner();
 
-client.send(opts.argv[1], function (err, result) {
-  if (err) {
-    console.error(err.stack || err.message || err);
-  }
+  liner.on('error', function (err) {
+    console.error(err.message || err);
+    process.exit(3);
+  });
 
-  if (result) {
-    if (opts.options.verbose) {
-      console.log(result);
-    } else {
-      if (result.stderr) {
-        console.error(clc.red.bold(result.stderr));
+  liner.on('data', function (line) {
+    var o = _.merge({}, options);
+
+    o.host = line.trim().toLowerCase();
+
+    var client = new Client(o);
+
+    client.send(opts.argv[0], function (err, result) {
+      console.log("\n" + '---- ' + o.host + ' ----' + "\n");
+
+      if (err) {
+        console.error(err.stack || err.message || err);
       }
 
-      console.log(clc.green(result.stdout));
+      if (result) {
+        if (opts.options.verbose) {
+          console.log(result);
+        } else {
+          if (result.stderr) {
+            console.error(clc.red.bold(result.stderr) + "\n");
+          }
 
-      process.exit(result.exitCode);
+          console.log(clc.green(result.stdout));
+        }
+      }
+    });
+  });
+
+  process.stdin.pipe(liner);
+} else {
+  options.host = opts.argv[0];
+
+  var client = new Client(options);
+
+  client.send(opts.argv[1], function (err, result) {
+    if (err) {
+      console.error(err.stack || err.message || err);
     }
-  }
-});
+
+    if (result) {
+      if (opts.options.verbose) {
+        console.log(result);
+      } else {
+        if (result.stderr) {
+          console.error(clc.red.bold(result.stderr) + "\n");
+        }
+
+        console.log(clc.green(result.stdout));
+
+        process.exit(result.exitCode);
+      }
+    }
+  });
+}
