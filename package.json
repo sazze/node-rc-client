@@ -1,6 +1,6 @@
 {
   "name": "sz-rc-client",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "client library and binary for the remote-control server",
   "main": "index.js",
   "publishConfig": {
@@ -27,7 +27,7 @@
   "dependencies": {
     "cli-color": "^1.0.0",
     "debug": "^2.2.0",
-    "engine.io-client": "git+https://github.com/socketio/engine.io-client#ea5b5f24cfd77fa39f92f93c65b5ec05f73ab30e",
+    "engine.io-client": "^1.6.11",
     "lodash": "^3.10.0",
     "node-getopt": "^0.2.3",
     "sz-liner": "^1.0.0",
