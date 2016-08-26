@@ -5,7 +5,7 @@ var Client = require('../');
 var fs = require('fs');
 var Getopt = require('node-getopt');
 var clc = require('cli-color');
-var Liner = require('sz-liner');
+var Liner = require('@sazze/liner');
 var path = require('path');
 
 var getopt = new Getopt([

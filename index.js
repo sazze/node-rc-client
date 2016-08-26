@@ -4,10 +4,10 @@
  */
 
 var ioClient = require('engine.io-client');
-var protocol = require('sz-rc-protocol');
+var protocol = require('@sazze/rc-protocol');
 var url = require('url');
 var _ = require('lodash');
-var debug = require('debug')('sz-rc-client');
+var debug = require('debug')('@sazze/rc-client');
 var path = require('path');
 
 var Message = protocol.Message;

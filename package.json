@@ -1,25 +1,28 @@
 {
-  "name": "sz-rc-client",
+  "name": "@sazze/rc-client",
   "version": "1.2.1",
   "description": "client library and binary for the remote-control server",
   "main": "index.js",
-  "publishConfig": {
-    "registry": "http://npm.sazze.com/"
-  },
   "scripts": {
     "test": "make test"
   },
+  "engines": {
+    "node": ">=0.12.x"
+  },
   "repository": {
     "type": "git",
-    "url": "http://gitlab.sazze.com/ops/rc-client.git"
+    "url": "http://github.com/sazze/node-rc-client.git"
   },
   "keywords": [
     "remote",
     "control",
     "client"
   ],
+  "bugs": {
+    "url": "https://github.com/sazze/node-rc-client/issues"
+  },
   "author": "Craig Thayer <cthayer@sazze.com>",
-  "license": "Copyright 2015 Sazze, Inc.  All rights reserved.",
+  "license": "ISC",
   "devDependencies": {
     "chai": "^3.2.0",
     "mocha": "^2.2.5"
@@ -30,8 +33,8 @@
     "engine.io-client": "^1.6.11",
     "lodash": "^3.10.0",
     "node-getopt": "^0.2.3",
-    "sz-liner": "^1.0.0",
-    "sz-rc-protocol": "=1.0.0"
+    "@sazze/liner": "^1.0.0",
+    "@sazze/rc-protocol": "=1.0.0"
   },
   "bin": {
     "rc": "bin/rc"
