@@ -28,13 +28,14 @@
     "mocha": "^2.2.5"
   },
   "dependencies": {
+    "@sazze/liner": "^1.0.0",
+    "@sazze/rc-protocol": "=1.0.0",
+    "async": "^2.1.1",
     "cli-color": "^1.0.0",
     "debug": "^2.2.0",
     "engine.io-client": "^1.6.11",
     "lodash": "^3.10.0",
-    "node-getopt": "^0.2.3",
-    "@sazze/liner": "^1.0.0",
-    "@sazze/rc-protocol": "=1.0.0"
+    "node-getopt": "^0.2.3"
   },
   "bin": {
     "rc": "bin/rc"
