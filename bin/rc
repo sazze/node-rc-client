@@ -113,6 +113,16 @@ if (opts.argv.length == 1) {
     });
   }, opts.options.batchSize);
 
+  hostQueue.buffer = opts.options.batchSize;
+
+  hostQueue.saturated = function () {
+    hostQueue.pause();
+  };
+
+  hostQueue.unsaturated = function () {
+    hostQueue.resume();
+  };
+
   var liner = new Liner();
 
   liner.on('error', function (err) {
