@@ -7,12 +7,15 @@ var Getopt = require('node-getopt');
 var clc = require('cli-color');
 var Liner = require('@sazze/liner');
 var path = require('path');
+var async = require('async');
 
 var getopt = new Getopt([
   ['d', 'keyDir=DIR', 'directory where key is found'],
   ['c', 'configFile=FILE', 'json file with config options'],
   ['p', 'port=PORT', 'the port to connect to'],
   ['k', 'keyName=NAME', 'the name of the key to use'],
+  ['b', 'batchSize=SIZE', 'the max number of hosts to send the\n                         command to at once while reading\n                         from STDIN (default: 20)'],
+  ['d', 'delay=TIME', 'time to wait between batches (in ms)'],
   ['v', 'verbose', 'display raw response information'],
   ['h', 'help', 'display this help message']
 ]);
@@ -62,6 +65,18 @@ if (opts.options.port) {
   options.port = opts.options.port;
 }
 
+if (parseInt(opts.options.batchSize) > 0) {
+  opts.options.batchSize = parseInt(opts.options.batchSize);
+} else {
+  opts.options.batchSize = 20;
+}
+
+if (parseInt(opts.options.delay) > 0) {
+  opts.options.delay = parseInt(opts.options.delay);
+} else {
+  opts.options.delay = 0;
+}
+
 if (opts.argv.length > 2 || opts.argv.length < 1) {
   console.error('Invalid arguments');
   getopt.showHelp();
@@ -75,17 +90,12 @@ if (opts.argv.length == 1) {
     process.exit(2);
   });
 
-  var liner = new Liner();
+  var done = false;
 
-  liner.on('error', function (err) {
-    console.error(err.message || err);
-    process.exit(3);
-  });
-
-  liner.on('data', function (line) {
+  var hostQueue = async.queue(function (host, done) {
     var o = _.merge({}, options);
 
-    o.host = line.trim().toLowerCase();
+    o.host = host.trim().toLowerCase();
 
     var client = new Client(o);
 
@@ -107,7 +117,39 @@ if (opts.argv.length == 1) {
           console.log(clc.green(result.stdout));
         }
       }
+
+      done();
     });
+  }, opts.options.batchSize);
+
+  hostQueue.buffer = opts.options.batchSize;
+
+  hostQueue.saturated = function () {
+    hostQueue.pause();
+  };
+
+  hostQueue.unsaturated = function () {
+    if (!done && opts.options.delay) {
+      setTimeout(hostQueue.resume.bind(hostQueue), opts.options.delay);
+      return;
+    }
+
+    hostQueue.resume();
+  };
+
+  hostQueue.empty = function () {
+    done = true;
+  };
+
+  var liner = new Liner();
+
+  liner.on('error', function (err) {
+    console.error(err.message || err);
+    process.exit(3);
+  });
+
+  liner.on('data', function (line) {
+    hostQueue.push(line);
   });
 
   process.stdin.pipe(liner);
