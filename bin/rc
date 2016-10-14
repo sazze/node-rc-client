@@ -90,6 +90,8 @@ if (opts.argv.length == 1) {
     process.exit(2);
   });
 
+  var done = false;
+
   var hostQueue = async.queue(function (host, done) {
     var o = _.merge({}, options);
 
@@ -127,12 +129,16 @@ if (opts.argv.length == 1) {
   };
 
   hostQueue.unsaturated = function () {
-    if (opts.options.delay) {
+    if (!done && opts.options.delay) {
       setTimeout(hostQueue.resume.bind(hostQueue), opts.options.delay);
       return;
     }
 
     hostQueue.resume();
+  };
+
+  hostQueue.empty = function () {
+    done = true;
   };
 
   var liner = new Liner();
