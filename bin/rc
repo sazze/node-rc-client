@@ -15,6 +15,7 @@ var getopt = new Getopt([
   ['p', 'port=PORT', 'the port to connect to'],
   ['k', 'keyName=NAME', 'the name of the key to use'],
   ['b', 'batchSize=SIZE', 'the max number of hosts to send the\n                         command to at once while reading\n                         from STDIN (default: 20)'],
+  ['d', 'delay=TIME', 'time to wait between batches (in ms)'],
   ['v', 'verbose', 'display raw response information'],
   ['h', 'help', 'display this help message']
 ]);
@@ -70,6 +71,12 @@ if (parseInt(opts.options.batchSize) > 0) {
   opts.options.batchSize = 20;
 }
 
+if (parseInt(opts.options.delay) > 0) {
+  opts.options.delay = parseInt(opts.options.delay);
+} else {
+  opts.options.delay = 0;
+}
+
 if (opts.argv.length > 2 || opts.argv.length < 1) {
   console.error('Invalid arguments');
   getopt.showHelp();
@@ -120,6 +127,11 @@ if (opts.argv.length == 1) {
   };
 
   hostQueue.unsaturated = function () {
+    if (opts.options.delay) {
+      setTimeout(hostQueue.resume.bind(hostQueue), opts.options.delay);
+      return;
+    }
+
     hostQueue.resume();
   };
 
