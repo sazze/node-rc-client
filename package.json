@@ -1,6 +1,6 @@
 {
   "name": "@sazze/rc-client",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "client library and binary for the remote-control server",
   "main": "index.js",
   "scripts": {

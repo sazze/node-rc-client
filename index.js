@@ -33,7 +33,8 @@ function Client(options) {
     host: process.env.SZ_RC_CLIENT_HOST || null,
     port: process.env.SZ_RC_CLIENT_PORT || 4515,
     keyDir: process.env.SZ_RC_CLIENT_KEY_DIR || '',
-    keyName: process.env.SZ_RC_CLIENT_KEY_NAME || ''
+    keyName: process.env.SZ_RC_CLIENT_KEY_NAME || '',
+    retry: 0
   };
 
   _.merge(this.options, options);
@@ -43,7 +44,9 @@ function Client(options) {
     slashes: true,
     hostname: this.options.host,
     port: this.options.port
-  }
+  };
+
+  this._retries = 0;
 }
 
 module.exports = Client;
@@ -76,9 +79,12 @@ Client.prototype.send = function (command, options, callback) {
     debug(this.url);
     debug(this.engineOptions);
 
+    var connected = false;
     var socket = ioClient(url.format(this.url), this.engineOptions);
 
     socket.on('open', function () {
+      connected = true;
+
       var message = new Message();
 
       message.command = command;
@@ -102,7 +108,15 @@ Client.prototype.send = function (command, options, callback) {
     });
 
     socket.on('close', function () {
+      if (!connected && this.options.retry > 0 && this.options.retry > this._retries++) {
+        debug('connection failed.  retrying (' + this._retries + ' / ' + this.options.retry + ')');
+        this.send(command, options, callback);
+        return;
+      }
+
+      this._retries = 0;
+
       callback(error, response);
-    });
+    }.bind(this));
   }.bind(this));
 };
