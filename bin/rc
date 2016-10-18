@@ -16,6 +16,7 @@ var getopt = new Getopt([
   ['k', 'keyName=NAME', 'the name of the key to use'],
   ['b', 'batchSize=SIZE', 'the max number of hosts to send the\n                         command to at once while reading\n                         from STDIN (default: 20)'],
   ['d', 'delay=TIME', 'time to wait between batches (in ms)'],
+  ['r', 'retry=NUM', 'number of times to retry a failed connection\n                         before giving up (default: 0)'],
   ['v', 'verbose', 'display raw response information'],
   ['h', 'help', 'display this help message']
 ]);
@@ -75,6 +76,16 @@ if (parseInt(opts.options.delay) > 0) {
   opts.options.delay = parseInt(opts.options.delay);
 } else {
   opts.options.delay = 0;
+}
+
+if (parseInt(opts.options.retry) > 0) {
+  opts.options.retry = parseInt(opts.options.retry);
+} else {
+  opts.options.retry = 0;
+}
+
+if (opts.options.retry) {
+  options.retry = opts.options.retry;
 }
 
 if (opts.argv.length > 2 || opts.argv.length < 1) {
