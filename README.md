@@ -37,6 +37,8 @@ The configuration file is a properly formatted JSON file (example below):
 npm install --save @sazze/rc-client
 ```
 
+**Create a new instance of the client library to work with:**
+
 ```js
 var Client = require('@sazze/rc-client');
 
@@ -46,6 +48,48 @@ var options = {
   keyName: 'foo'
 };
 
+var client = new Client(options);
+```
+
+**Recommended Integration:** (introduced in version 1.3.0)
+
+The client library implements a Duplex stream interface (in ObjectMode) that allows messages to be sent by calling `write()` and received by registering a listener to the `data` event.
+
+```js
+var client = new Client(options);
+
+client.on('data', function (msg) {
+    // format the message with a specific rc protocol message type
+    msg = new Client.protocol.Response(msg);
+    
+    console.log(msg);
+    
+    // end the session
+    client.disconnect();
+});
+
+var msg = new Client.protocol.Message();
+
+msg.command = 'echo "Hello World!"'
+
+client.write(msg);
+```
+
+Piping to and from an instance of the client library is also supported.
+
+```js
+var client = new Client(options);
+// stream that emits rc protocol message objects
+var msgStream = new MsgReadableStream();
+
+msgStream.pipe(client).pipe(process.stdout);
+```
+
+All Duplex stream interactions are supported.
+
+**Deprecated Integration:**
+
+```js
 var client = new Client(options);
 
 client.send('echo "Hello World!"', function (err, result) {

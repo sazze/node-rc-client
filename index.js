@@ -9,6 +9,8 @@ var url = require('url');
 var _ = require('lodash');
 var debug = require('debug')('@sazze/rc-client');
 var path = require('path');
+var Duplex = require('stream').Duplex;
+var util = require('util');
 
 var Message = protocol.Message;
 var Response = protocol.Response;
@@ -16,6 +18,8 @@ var Response = protocol.Response;
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
 
 function Client(options) {
+  Duplex.call(this, {readableObjectMode: true, writableObjectMode: true});
+
   if (!_.isPlainObject(options)) {
     options = {};
   }
@@ -47,7 +51,14 @@ function Client(options) {
   };
 
   this._retries = 0;
+
+  this.connected = false;
+  this.socket = null;
 }
+
+Client.protocol = protocol;
+
+util.inherits(Client, Duplex);
 
 module.exports = Client;
 
@@ -68,55 +79,125 @@ Client.prototype.send = function (command, options, callback) {
   var response = null;
   var error = null;
 
+  this.on('data', function (msg) {
+    response = new Response(msg);
+
+    this.socket.close();
+  }.bind(this));
+
+  this.on('error', function (err) {
+    error = err;
+  });
+
+  this.on('close', function () {
+    callback(error, response);
+  });
+
+  var message = new Message();
+
+  message.command = command;
+  message.options = options;
+
+  this.write(message);
+};
+
+Client.prototype.createSig = function (callback) {
   protocol.Auth.createSig(this.options.keyName, this.options.keyDir, function (err, authHeader) {
     if (err) {
-      callback(err, response);
+      callback(err);
       return;
     }
 
     this.engineOptions.extraHeaders.authorization = authHeader;
 
-    debug(this.url);
     debug(this.engineOptions);
 
-    var connected = false;
-    var socket = ioClient(url.format(this.url), this.engineOptions);
+    callback();
+  }.bind(this));
+};
 
-    socket.on('open', function () {
-      connected = true;
+Client.prototype.connect = function (callback) {
+  if (!_.isFunction(callback)) {
+    callback = _.noop;
+  }
 
-      var message = new Message();
+  this.createSig(function (err) {
+    if (err) {
+      callback(err);
+      return;
+    }
 
-      message.command = command;
-      message.options = options;
+    debug(this.url);
 
-      socket.send(JSON.stringify(message));
-    });
+    this.socket = ioClient(url.format(this.url), this.engineOptions);
 
-    socket.on('message', function (data) {
-      if (_.isString(data)) {
-        data = JSON.parse(data);
-      }
+    this.socket.on('open', function () {
+      this.connected = true;
+      this.emit('connect');
+      callback();
+    }.bind(this));
 
-      response = new Response(data);
+    this.socket.on('error', function (err) {
+      debug('error: ' + (err.stack || err.message || err));
+      this.emit('error', err);
+    }.bind(this));
 
-      socket.close();
-    });
-
-    socket.on('error', function (err) {
-      error = err;
-    });
-
-    socket.on('close', function () {
-      if (!connected && this.options.retry > 0 && this.options.retry > this._retries++) {
+    this.socket.on('close', function () {
+      if (!this.connected && this.options.retry > 0 && this.options.retry > this._retries++) {
         debug('connection failed.  retrying (' + this._retries + ' / ' + this.options.retry + ')');
-        this.send(command, options, callback);
-        return;
+        this.emit('retry', this._retries, this.options.retry);
+        return this.connect();
       }
 
       this._retries = 0;
 
-      callback(error, response);
+      if (this._readableState !== null) {
+        // end the read stream
+        this.push(null);
+      }
+
+      this.emit('close');
+    }.bind(this));
+
+    this.socket.on('message', function (data) {
+      debug('message received: ' + data);
+
+      if (_.isString(data)) {
+        data = JSON.parse(data);
+      }
+
+      this.push(data);
     }.bind(this));
   }.bind(this));
 };
+
+Client.prototype.disconnect = function () {
+  if (this.socket) {
+    this.socket.close();
+  }
+};
+
+Client.prototype._write = function (message, encoding, done) {
+  debug('sending message');
+
+  if (this.socket && this.connected) {
+    this.socket.send(JSON.stringify(message));
+    done();
+    return;
+  }
+
+  debug('connecting before sending message');
+
+  this.connect(function (err) {
+    if (err) {
+      done(err);
+      return;
+    }
+
+    this.socket.send(JSON.stringify(message));
+
+    done();
+  }.bind(this));
+};
+
+Client.prototype._read = _.noop;
