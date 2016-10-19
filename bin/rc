@@ -108,10 +108,19 @@ if (opts.argv.length == 1) {
 
     o.host = host.trim().toLowerCase();
 
+    var retryLog = '';
     var client = new Client(o);
+
+    client.on('retry', function (retry, maxRetry) {
+      retryLog += 'failed to connect to ' + options.host + '.  retrying (' + retry + ' / ' + maxRetry + ')' + "\n";
+    });
 
     client.send(opts.argv[0], function (err, result) {
       console.log("\n" + '---- ' + o.host + ' ----' + "\n");
+
+      if (options.verbose && retryLog) {
+        console.error(retryLog);
+      }
 
       if (err) {
         console.error(err.stack || err.message || err);
@@ -165,9 +174,15 @@ if (opts.argv.length == 1) {
 
   process.stdin.pipe(liner);
 } else {
-  options.host = opts.argv[0];
+  options.host = opts.argv[0].trim().toLowerCase();
 
   var client = new Client(options);
+
+  if (options.verbose) {
+    client.on('retry', function (retry, maxRetry) {
+      console.error('failed to connect to ' + options.host + '.  retrying (' + retry + ' / ' + maxRetry + ')');
+    });
+  }
 
   client.send(opts.argv[1], function (err, result) {
     if (err) {
